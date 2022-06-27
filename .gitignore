@@ -1,0 +1,7 @@
+.vs/*
+
+JsonSerialization/bin/*
+JsonSerialization/obj/*
+JsonSerialization/Debug/bin/*
+JsonSerialization/Debug/obj/*
+
