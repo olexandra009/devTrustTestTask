@@ -1,12 +1,18 @@
-﻿using System;
-
-namespace JsonSerialization
+﻿namespace JsonSerialization
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
-            Console.WriteLine("Hello World!");
+            ScratchJsonParser scratch = new ScratchJsonParser();
+            var a = scratch.ParseToDictionary("{city: ‘Kiev’, addressLine: prospect “Peremogy” 28/7,}", typeof(Address));
+            a.ToObject<Address>();
+
+            var pa = scratch.ParseToDictionary("{firstName: ‘Ivan’, lastName: ‘Petrov’, address: {city: ‘Kiev’, addressLine: prospect “Peremogy” 28/7,}", typeof(Person));
+            pa.ToObject<Person>();
+         
+
         }
+
     }
 }
