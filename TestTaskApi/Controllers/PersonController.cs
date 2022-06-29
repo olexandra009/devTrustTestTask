@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
+using TestTaskApi.Data.Entity;
+using TestTaskApi.Data.Repository;
 
 namespace TestTaskApi.Controllers
 {
@@ -8,22 +10,28 @@ namespace TestTaskApi.Controllers
     [Route("[controller]")]
     public class PersonController : ControllerBase
     {
-        [HttpPost]
-        public Task<long> Save(string json)
+        protected readonly IPersonRepository PersonRepository;
+        protected readonly IJsonParser JsonParser;
+
+        public PersonController(IPersonRepository personRepository, IJsonParser jsonParser)
         {
-            // deserialize string into object of type Person using own deserializer (see more details in Minimal requirements section)
-            // DO NOT use 3rd party libraries for deserialization like Json.NET or Microsoft
-            // insert or update Person entity in database
-            // return entity id
-            throw new NotImplementedException();
+            PersonRepository = personRepository;
+            JsonParser = jsonParser;
         }
-        [HttpGet]
-        public Task<string> GetAll(GetAllRequest request)
+
+        [HttpPost("/save")]
+        public async Task<long> Save([FromBody]string json)
         {
-            // get Persons entities from database
-            // filter by GetAllRequest fields (null or empty fields should be ignored)
-            // use your own manually written json serializer to serialize result into string
-            throw new NotImplementedException();
+            Person person = JsonParser.Deserialize(json);
+            long id = await PersonRepository.Save(person);
+            return id;
+        }
+
+        [HttpGet("/getAll")]
+        public async Task<string> GetAll([FromQuery]GetAllRequest request)
+        {
+            var list =  await PersonRepository.List(request);
+            return JsonParser.Serialize(list);
         }
 
 

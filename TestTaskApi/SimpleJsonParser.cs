@@ -6,13 +6,13 @@ using static System.String;
 
 namespace TestTaskApi
 {
-    public interface ISimpleJsonParser
+    public interface IJsonParser
     {
         string Serialize(List<Person> persons);
         string Serialize(Person person);
         Person Deserialize(string jsonLine);
     }
-    public class SimpleJsonParser: ISimpleJsonParser
+    public class SimpleJsonParser: IJsonParser
     {
 
         public string Serialize(List<Person> persons)
@@ -74,7 +74,7 @@ namespace TestTaskApi
             Person newPerson = new Person();
             foreach (var property in typeof(Person).GetProperties())
             {
-                var (value, cutLine)= GetStrValueByKey(jsonLine, property.Name);
+                var value = GetStrValueByKey(jsonLine, property.Name);
                 if (property.PropertyType == typeof(string))
                     property.SetValue(newPerson, value);
                 else if(property.PropertyType == typeof(long))
@@ -85,15 +85,14 @@ namespace TestTaskApi
                 {
                     Address address = new Address
                     {
-                        City = GetStrValueByKey(value, "City").value, 
-                        AddressLine = GetStrValueByKey(value, "AddressLine").value
+                        City = GetStrValueByKey(value, "City"), 
+                        AddressLine = GetStrValueByKey(value, "AddressLine")
                     };
-                    var id = GetStrValueByKey(value, "Id").value;
+                    var id = GetStrValueByKey(value, "Id");
                     address.Id = IsNullOrEmpty(id) ? 0 : long.Parse(id);
                     newPerson.Address = address;
                 }
 
-                jsonLine = cutLine;
             }
             return newPerson;
         }
@@ -117,22 +116,18 @@ namespace TestTaskApi
             return innerObjectLine;
         }
 
-        private (string value, string cutJson) GetStrValueByKey(string jsonLine, string property)
+        private string GetStrValueByKey(string jsonLine, string property)
         {
-            var index = jsonLine.IndexOf(property, StringComparison.CurrentCultureIgnoreCase);
-            if (index == -1) return (null, jsonLine);
+            var index = jsonLine.IndexOf(property+":", StringComparison.CurrentCultureIgnoreCase);
+            if (index == -1) return null;
 
             var valuePart = jsonLine.Substring(index).Split(":")[1].TrimStart();
             var line = Join(":", jsonLine.Substring(index).Split(":")[1..]);
 
             if (Regex.IsMatch(valuePart, @"^[\{]"))
-            {
-                var innerObject = GetObjectStrValueByKey(line);
-                return (innerObject, line[innerObject.Length..]);
-            }
-                
+                return GetObjectStrValueByKey(line);
             if (Regex.IsMatch(valuePart, @"^[\[]"))
-                return ("array", "");
+                return "array";
             string value;
             if (Regex.IsMatch(valuePart, @"^['‘""]"))
             {
@@ -140,11 +135,9 @@ namespace TestTaskApi
                 value = valuePart.Split(quote)[0].Substring(1);
             }
             else
-            {
                 value = valuePart.Split(',')[0];
-            }
-
-            return (value, line);
+            
+            return value;
         }
 
 

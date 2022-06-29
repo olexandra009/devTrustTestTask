@@ -13,7 +13,7 @@ namespace TestTaskApi
                 .As<IAddressRepository>().InstancePerLifetimeScope();
 
             builder.RegisterType<SimpleJsonParser>()
-                .As<ISimpleJsonParser>().InstancePerLifetimeScope();
+                .As<IJsonParser>().InstancePerLifetimeScope();
         }
     }
 }
