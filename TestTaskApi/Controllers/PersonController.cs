@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System;
 using System.Threading.Tasks;
 using TestTaskApi.Data.Entity;
 using TestTaskApi.Data.Repository;
@@ -27,8 +26,8 @@ namespace TestTaskApi.Controllers
             return id;
         }
 
-        [HttpGet("/getAll")]
-        public async Task<string> GetAll([FromQuery]GetAllRequest request)
+        [HttpPost("/getAll")]
+        public async Task<string> GetAll([FromBody]GetAllRequest request)
         {
             var list =  await PersonRepository.List(request);
             return JsonParser.Serialize(list);

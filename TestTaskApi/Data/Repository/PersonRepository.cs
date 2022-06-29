@@ -49,17 +49,16 @@ namespace TestTaskApi.Data.Repository
                 person.Address = null;
                 person.AddressId = addressId;
             }
-            DbContext.Set<Person>().Add(person);
+            await DbContext.Set<Person>().AddAsync(person);
             await DbContext.SaveChangesAsync();
             return person;
         }
 
-        private async Task<Person> Update(Person person)
+        private async Task Update(Person person)
         {
             DbContext.Attach(person);
             DbContext.Entry(person).State = EntityState.Modified;
             await DbContext.SaveChangesAsync();
-            return person;
         }
 
         protected async Task<Person> Get(long id)

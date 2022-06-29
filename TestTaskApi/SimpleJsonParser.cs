@@ -126,8 +126,9 @@ namespace TestTaskApi
 
             if (Regex.IsMatch(valuePart, @"^[\{]"))
                 return GetObjectStrValueByKey(line);
-            if (Regex.IsMatch(valuePart, @"^[\[]"))
-                return "array";
+            if (Regex.IsMatch(valuePart, @"^[\[]")) //out of scope
+                throw new NotImplementedException();
+           
             string value;
             if (Regex.IsMatch(valuePart, @"^['‘""]"))
             {
