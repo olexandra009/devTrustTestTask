@@ -3,57 +3,85 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
 using TestTaskApi.Data.Entity;
-using TestTaskApi.Migrations;
 
 namespace TestTaskApi.Data.Repository
 {
     public interface IPersonRepository
     {
-        Task<Person> Create(Person person);
-        Task<Person> Update(Person person);
-        Task<Person> Get(long id);
+        Task<long> Save(Person person);
         Task<List<Person>> List(GetAllRequest filter);
+      
     }
 
     public class PersonRepository : IPersonRepository
     {
-        protected readonly PersonDbContext _dbContext;
+        protected readonly PersonDbContext DbContext;
+        private readonly IAddressRepository _addressRepository;
 
-        public PersonRepository(PersonDbContext dbContext)
+        public PersonRepository(PersonDbContext dbContext, IAddressRepository addressRepository)
         {
-            _dbContext = dbContext;
+            DbContext = dbContext;
+            _addressRepository = addressRepository;
         }
 
-        public async Task<Person> Create(Person person)
+        public async Task<long> Save(Person person)
         {
-            _dbContext.Set<Person>().Add(person);
-            await _dbContext.SaveChangesAsync();
+            long resultId = person.Id;
+            if (resultId == 0)
+            {
+                var res = await Create(person);
+                resultId = res.Id;
+            }
+            else
+            {
+                await Update(person);
+            }
+            return resultId;
+        }
+
+        private async Task<Person> Create(Person person)
+        {
+            var address = person.Address;
+            var addressId = await _addressRepository.GetAddressId(address);
+            if (addressId != -1)
+            {
+                person.Address = null;
+                person.AddressId = addressId;
+            }
+            DbContext.Set<Person>().Add(person);
+            await DbContext.SaveChangesAsync();
             return person;
         }
 
-        public async Task<Person> Update(Person person)
+        private async Task<Person> Update(Person person)
         {
-            _dbContext.Attach(person);
-            _dbContext.Entry(person).State = EntityState.Modified;
-            await _dbContext.SaveChangesAsync();
+            DbContext.Attach(person);
+            DbContext.Entry(person).State = EntityState.Modified;
+            await DbContext.SaveChangesAsync();
             return person;
         }
 
-        public async Task<Person> Get(long id)
+        protected async Task<Person> Get(long id)
         {
             var keys = new object[] {id};
-            return await _dbContext.Set<Person>().FindAsync(keys);
+            return await DbContext.Set<Person>().FindAsync(keys);
         }
 
-      
+
+        protected async Task DeleteRange(List<long> ids)
+        {
+            var query = await DbContext.Set<Person>().Where(p => ids.Contains(p.Id)).ToListAsync();
+            DbContext.Set<Person>().RemoveRange(query);
+            await DbContext.SaveChangesAsync();
+
+        }
 
         public async Task<List<Person>> List(GetAllRequest filter)
         {
             var query = 
-                _dbContext.Set<Person>()
-                .Join(_dbContext.Set<Address>(), person => person.AddressId, address => address.Id,
+                DbContext.Set<Person>()
+                .Join(DbContext.Set<Address>(), person => person.AddressId, address => address.Id,
                     (person, address) => new {person, address});
 
             if (filter != null)
