@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TestTaskApi.Data.Entity;
@@ -10,9 +8,6 @@ namespace TestTaskApi.Data.Repository
     public interface IAddressRepository
     {
         Task<long> GetAddressId(Address address);
-        Task<List<Address>> List();
-        Task<Address> Get(long id);
-        Task DeleteRange(List<long> ids);
     }
     public class AddressRepository: IAddressRepository
     {
@@ -23,15 +18,6 @@ namespace TestTaskApi.Data.Repository
             DbContext = dbContext;
         }
 
-        public async Task<Address> Get(long id)
-        {
-            var keys = new object[] { id };
-            return await DbContext.Set<Address>().FindAsync(keys);
-        }
-        public async Task<List<Address>> List()
-        {
-            return await DbContext.Set<Address>().ToListAsync();
-        }
 
         public async Task<long> GetAddressId(Address address)
         {
@@ -43,12 +29,5 @@ namespace TestTaskApi.Data.Repository
             return results[0].Id;
         }
 
-        public async Task DeleteRange(List<long> ids)
-        {
-            var query = await DbContext.Set<Address>().Where(p => ids.Contains(p.Id)).ToListAsync();
-            DbContext.Set<Address>().RemoveRange(query);
-            await DbContext.SaveChangesAsync();
-
-        }
     }
 }

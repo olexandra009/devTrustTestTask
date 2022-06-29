@@ -49,32 +49,16 @@ namespace TestTaskApi.Data.Repository
                 person.Address = null;
                 person.AddressId = addressId;
             }
-            DbContext.Set<Person>().Add(person);
+            await DbContext.Set<Person>().AddAsync(person);
             await DbContext.SaveChangesAsync();
             return person;
         }
 
-        private async Task<Person> Update(Person person)
+        private async Task Update(Person person)
         {
             DbContext.Attach(person);
             DbContext.Entry(person).State = EntityState.Modified;
             await DbContext.SaveChangesAsync();
-            return person;
-        }
-
-        protected async Task<Person> Get(long id)
-        {
-            var keys = new object[] {id};
-            return await DbContext.Set<Person>().FindAsync(keys);
-        }
-
-
-        protected async Task DeleteRange(List<long> ids)
-        {
-            var query = await DbContext.Set<Person>().Where(p => ids.Contains(p.Id)).ToListAsync();
-            DbContext.Set<Person>().RemoveRange(query);
-            await DbContext.SaveChangesAsync();
-
         }
 
         public async Task<List<Person>> List(GetAllRequest filter)
