@@ -8,29 +8,29 @@ namespace TestTaskApi
 {
     public interface IJsonParser
     {
-        string Serialize(object serialized);
+        string Serialize(object input);
         T Deserialize<T>(string jsonLine) where T : new();
     }
 
     public class SimpleJsonParser: IJsonParser
     {
-        public string Serialize(object serialized)
+        public string Serialize(object input)
         {
-            if (serialized is IEnumerable || serialized.GetType().IsArray)
+            if (input is IEnumerable || input.GetType().IsArray)
             {
-                return SerializeList((IEnumerable)serialized);
+                return SerializeList((IEnumerable)input);
             }
             var result = "{" + Environment.NewLine;
-            foreach (var property in serialized.GetType().GetProperties())
+            foreach (var property in input.GetType().GetProperties())
             {
                 var name = char.ToLower(property.Name[0])+property.Name[1..];
-                var value = property.GetValue(serialized)?.ToString();
+                var value = property.GetValue(input)?.ToString();
                 if (property.PropertyType == typeof(Address))
                 {
-                    value = Serialize(property.GetValue(serialized)); 
+                    value = Serialize(property.GetValue(input)); 
                     result += name + ": " + value;
                 }
-                else if (serialized.GetType() == typeof(Address) && property.Name == "AddressLine")//for unquoted case in address line 
+                else if (input.GetType() == typeof(Address) && property.Name == "AddressLine")//for unquoted case in address line 
                     result += name + ": " + value + ",";
                 else if(property.PropertyType == typeof(string))
                     result += name + ": ‘" + value + "’,";
