@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.Text.RegularExpressions;
 using TestTaskApi.Data.Entity;
 using static System.String;
@@ -8,36 +8,30 @@ namespace TestTaskApi
 {
     public interface IJsonParser
     {
-        string Serialize(List<Person> persons);
-        string Serialize(Person person);
-        Person Deserialize(string jsonLine);
+        string Serialize(object serialized);
+        T Deserialize<T>(string jsonLine) where T : new();
     }
+
     public class SimpleJsonParser: IJsonParser
     {
-
-        public string Serialize(List<Person> persons)
+        public string Serialize(object serialized)
         {
-            var result = "["+ Environment.NewLine;
-            foreach (var person in persons)
+            if (serialized is IEnumerable || serialized.GetType().IsArray)
             {
-                result += Serialize(person)+"," + Environment.NewLine; 
+                return SerializeList((IEnumerable)serialized);
             }
-
-            result += "]";
-            return result;
-        }
-        public string Serialize(Person person)
-        {
             var result = "{" + Environment.NewLine;
-            foreach (var property in typeof(Person).GetProperties())
+            foreach (var property in serialized.GetType().GetProperties())
             {
                 var name = char.ToLower(property.Name[0])+property.Name[1..];
-                var value = property.GetValue(person)?.ToString();
+                var value = property.GetValue(serialized)?.ToString();
                 if (property.PropertyType == typeof(Address))
                 {
-                    value = Serialize(person.Address);
+                    value = Serialize(property.GetValue(serialized)); 
                     result += name + ": " + value;
                 }
+                else if (serialized.GetType() == typeof(Address) && property.Name == "AddressLine")//for unquoted case in address line 
+                    result += name + ": " + value + ",";
                 else if(property.PropertyType == typeof(string))
                     result += name + ": ‘" + value + "’,";
                 else
@@ -50,54 +44,43 @@ namespace TestTaskApi
             return result;
         }
 
-        private string Serialize(Address address)
+        private string SerializeList(IEnumerable list)
         {
-            string result = "{" + Environment.NewLine;
-            foreach (var property in typeof(Address).GetProperties())
+            var result = "[" + Environment.NewLine;
+            foreach (var obj in list)
             {
-                var name = char.ToLower(property.Name[0]) + property.Name[1..];
-                var value = property.GetValue(address)?.ToString();
-                if (property.Name == "AddressLine")
-                    result += name + ": " + value + ",";
-                else if (property.PropertyType == typeof(string))
-                    result += name + ": ‘" + value + "’,";
-                else
-                    result += name + ": " + value + ",";
-                result += Environment.NewLine;
+                result += Serialize(obj) + "," + Environment.NewLine;
             }
-            result += "}";
+
+            result += "]";
             return result;
         }
 
-        public Person Deserialize(string jsonLine)
-        {
-            Person newPerson = new Person();
-            foreach (var property in typeof(Person).GetProperties())
-            {
-                var value = GetStrValueByKey(jsonLine, property.Name);
-                if (property.PropertyType == typeof(string))
-                    property.SetValue(newPerson, value);
-                else if(property.PropertyType == typeof(long))
-                    property.SetValue(newPerson, IsNullOrEmpty(value) ? 0 : long.Parse(value));
-                else if(property.PropertyType==typeof(long?))
-                    property.SetValue(newPerson, IsNullOrEmpty(value) ? null : long.Parse(value));
-                else //case for Address
-                {
-                    Address address = new Address
-                    {
-                        City = GetStrValueByKey(value, "City"), 
-                        AddressLine = GetStrValueByKey(value, "AddressLine")
-                    };
-                    var id = GetStrValueByKey(value, "Id");
-                    address.Id = IsNullOrEmpty(id) ? 0 : long.Parse(id);
-                    newPerson.Address = address;
-                }
 
-            }
-            return newPerson;
+        public T Deserialize<T>(string jsonLine) where T : new()
+        {
+            return (T) DeserializeObject(jsonLine, typeof(T));
         }
 
-
+        private object DeserializeObject(string json, Type type)
+        {
+            object instance = Activator.CreateInstance(type);
+            foreach (var property in type.GetProperties())
+            {
+                var value = GetStrValueByKey(json, property.Name);
+                if (property.PropertyType == typeof(string))
+                    property.SetValue(instance, value);
+                else if (property.PropertyType == typeof(long))
+                    property.SetValue(instance, IsNullOrEmpty(value) ? 0 : long.Parse(value));
+                else if (property.PropertyType == typeof(long?))
+                    property.SetValue(instance, IsNullOrEmpty(value) ? null : long.Parse(value));
+                else //case for Address
+                {
+                    property.SetValue(instance, DeserializeObject(value, property.PropertyType));
+                }
+            }
+            return instance;
+    }
 
         #region Methods for parsing JSON
         private string GetObjectStrValueByKey(string jsonLine)

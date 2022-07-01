@@ -21,9 +21,9 @@ namespace TestTaskApi.Controllers
         [HttpPost("/save")]
         public async Task<long> Save([FromBody]string json)
         {
-            Person person = JsonParser.Deserialize(json);
-            long id = await PersonRepository.Save(person);
-            return id;
+           Person person = JsonParser.Deserialize<Person>(json);
+           long id = await PersonRepository.Save(person);
+           return id;
         }
 
         [HttpPost("/getAll")]
